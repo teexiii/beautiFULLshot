@@ -8,11 +8,11 @@ Cross-platform screenshot beautification app built with Tauri v2 + React + TypeS
 ## Features
 
 - **Screenshot Capture**: Fullscreen, region, and window capture with global hotkeys
-- **Annotation Tools**: Shapes (rectangle, ellipse), arrows, lines, freehand brush, text (with font styling & stroke effects), numbered annotations, spotlight effect
+- **Annotation Tools**: Shapes (rectangle, ellipse) with fill & stroke colors, arrows, lines, freehand brush, text (with font styling & stroke effects), numbered annotations, spotlight effect
 - **Beautification**: 50+ wallpapers, 24+ gradient backgrounds, solid colors, custom image backgrounds
 - **Image Styling**: Adjustable blur, shadow, corner radius, padding, and border with color picker
 - **Crop Tool**: 8 aspect ratio presets (1:1, 4:3, 16:9, etc.) with freeform option
-- **Export Options**: PNG/JPEG with quality control, 1x/2x/3x resolution, clipboard copy (Cmd/Ctrl+C)
+- **Export Options**: PNG/JPEG with quality control, 1x/2x/3x resolution, clipboard copy (Cmd/Ctrl+C), Quick Save (Cmd/Ctrl+S) also copies the saved file path to the clipboard
 - **Image Input**: Drag & drop images, paste from clipboard, or capture screenshots
 - **Native Integration**: System tray, global hotkeys, notifications
 - **Auto-Update**: Checks for updates on startup and installs automatically

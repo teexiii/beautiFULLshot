@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   generateFilename,
+  hashBytes,
   stageToDataURL,
   stageToBlob,
   dataURLToBytes,
@@ -71,24 +72,24 @@ describe('Export Utils', () => {
       vi.setSystemTime(new Date('2024-12-25T10:30:45.123Z'));
     });
 
-    it('should generate PNG filename with timestamp', () => {
+    it('should generate PNG filename with millisecond timestamp', () => {
       const filename = generateFilename('png');
-      expect(filename).toMatch(/^beautyshot_\d{8}_\d{6}\.png$/);
+      expect(filename).toMatch(/^beautyshot_\d{8}_\d{6}_\d{3}\.png$/);
       expect(filename).toContain('beautyshot_');
       expect(filename).toMatch(/\.png$/);
     });
 
-    it('should generate JPEG filename with timestamp', () => {
+    it('should generate JPEG filename with millisecond timestamp', () => {
       const filename = generateFilename('jpeg');
-      expect(filename).toMatch(/^beautyshot_\d{8}_\d{6}\.jpeg$/);
+      expect(filename).toMatch(/^beautyshot_\d{8}_\d{6}_\d{3}\.jpeg$/);
       expect(filename).toContain('beautyshot_');
       expect(filename).toMatch(/\.jpeg$/);
     });
 
-    it('should use ISO timestamp format (YYYYMMDD_HHMMSS)', () => {
+    it('should use ISO timestamp format (YYYYMMDD_HHMMSS_mmm)', () => {
       const filename = generateFilename('png');
-      // Timestamp should be 20241225_103045
-      expect(filename).toContain('beautyshot_20241225_103045');
+      // Timestamp should be 20241225_103045_123
+      expect(filename).toContain('beautyshot_20241225_103045_123');
     });
 
     it('should generate different filenames for different times', () => {
@@ -98,6 +99,18 @@ describe('Export Utils', () => {
       const filename2 = generateFilename('png');
 
       expect(filename1).not.toBe(filename2);
+    });
+
+    it('should distinguish saves within the same second (millisecond precision)', () => {
+      const filename1 = generateFilename('png');
+
+      // Same second, different millisecond -> must not collide
+      vi.setSystemTime(new Date('2024-12-25T10:30:45.900Z'));
+      const filename2 = generateFilename('png');
+
+      expect(filename1).not.toBe(filename2);
+      expect(filename1).toContain('_123.png');
+      expect(filename2).toContain('_900.png');
     });
 
     it('should handle different formats consistently', () => {
@@ -110,6 +123,31 @@ describe('Export Utils', () => {
       expect(pngTime).toBe(jpegTime);
       expect(pngName).toMatch(/\.png$/);
       expect(jpegName).toMatch(/\.jpeg$/);
+    });
+  });
+
+  describe('hashBytes', () => {
+    it('should return identical hash for identical content', () => {
+      const a = new Uint8Array([1, 2, 3, 4, 5]);
+      const b = new Uint8Array([1, 2, 3, 4, 5]);
+      expect(hashBytes(a)).toBe(hashBytes(b));
+    });
+
+    it('should return different hash when a byte changes', () => {
+      const a = new Uint8Array([1, 2, 3, 4, 5]);
+      const b = new Uint8Array([1, 2, 3, 4, 6]);
+      expect(hashBytes(a)).not.toBe(hashBytes(b));
+    });
+
+    it('should return different hash for different lengths', () => {
+      const a = new Uint8Array([1, 2, 3]);
+      const b = new Uint8Array([1, 2, 3, 0]);
+      expect(hashBytes(a)).not.toBe(hashBytes(b));
+    });
+
+    it('should encode length in the hash string', () => {
+      const bytes = new Uint8Array([9, 9, 9]);
+      expect(hashBytes(bytes)).toMatch(/-3$/);
     });
   });
 

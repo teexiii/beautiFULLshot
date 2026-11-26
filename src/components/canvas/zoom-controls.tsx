@@ -69,7 +69,7 @@ export function ZoomControls() {
     >
       {/* Quick copy button */}
       <button
-        onClick={copyToClipboard}
+        onClick={() => copyToClipboard()}
         disabled={isExporting}
         aria-label="Copy to clipboard"
         title="Copy to Clipboard (⌘C / Ctrl+C)"

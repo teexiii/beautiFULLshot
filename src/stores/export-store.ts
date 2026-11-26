@@ -19,6 +19,9 @@ interface ExportState {
   // Transient UI state (not persisted)
   isExporting: boolean;
   exportOperation: ExportOperation;
+  // Content hash of the last Quick Save; used to skip duplicate saves of
+  // unchanged content. Transient so a fresh session always writes on first save.
+  lastSaveHash: string | null;
 
   // Settings actions
   setFormat: (format: ExportFormat) => void;
@@ -27,6 +30,7 @@ interface ExportState {
   setOutputAspectRatio: (ratio: string) => void;
   setAutoName: (auto: boolean) => void;
   setLastSavePath: (path: string) => void;
+  setLastSaveHash: (hash: string | null) => void;
 
   // Export state actions
   startExport: (operation: ExportOperation) => void;
@@ -46,6 +50,7 @@ export const useExportStore = create<ExportState>()(
       // Transient state
       isExporting: false,
       exportOperation: 'idle',
+      lastSaveHash: null,
 
       setFormat: (format) => set({ format }),
       setQuality: (quality) =>
@@ -55,6 +60,7 @@ export const useExportStore = create<ExportState>()(
       setOutputAspectRatio: (ratio) => set({ outputAspectRatio: ratio }),
       setAutoName: (auto) => set({ autoName: auto }),
       setLastSavePath: (path) => set({ lastSavePath: path }),
+      setLastSaveHash: (hash) => set({ lastSaveHash: hash }),
 
       startExport: (operation) =>
         set({ isExporting: true, exportOperation: operation }),

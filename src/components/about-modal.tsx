@@ -2,7 +2,8 @@
 // Shows app icon, version, author, website, and social links
 
 import { createPortal } from 'react-dom';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { getVersion } from '@tauri-apps/api/app';
 
 interface Props {
   isOpen: boolean;
@@ -11,7 +12,6 @@ interface Props {
 
 const APP_INFO = {
   name: 'beautiFULLshot',
-  version: '1.0.3',
   description: 'Capture, annotate, and beautify screenshots',
   copyright: '© 2025 itsddvn',
   website: 'https://beautifullshot.itsdd.vn',
@@ -26,6 +26,12 @@ const APP_INFO = {
 
 export function AboutModal({ isOpen, onClose }: Props) {
   const modalRef = useRef<HTMLDivElement>(null);
+  // Read the real app version from Tauri so it always matches the built version
+  const [version, setVersion] = useState('');
+
+  useEffect(() => {
+    getVersion().then(setVersion).catch(() => {});
+  }, []);
 
   // Handle ESC key to close modal
   useEffect(() => {
@@ -67,7 +73,7 @@ export function AboutModal({ isOpen, onClose }: Props) {
 
           {/* Version */}
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Version {APP_INFO.version}
+            Version {version}
           </p>
 
           {/* Description */}

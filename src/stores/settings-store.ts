@@ -61,6 +61,7 @@ interface SettingsState {
   startMinimized: boolean;
   closeToTray: boolean;
   showNotifications: boolean;
+  autoCopyOnCapture: boolean;
 
   // Default save location
   saveLocation: SaveLocation;
@@ -74,6 +75,7 @@ interface SettingsState {
   setStartMinimized: (value: boolean) => void;
   setCloseToTray: (value: boolean) => void;
   setShowNotifications: (value: boolean) => void;
+  setAutoCopyOnCapture: (value: boolean) => void;
   setSaveLocation: (location: SaveLocation) => void;
   setCustomSavePath: (path: string | null) => void;
   setTheme: (theme: ThemeMode) => void;
@@ -93,6 +95,7 @@ const DEFAULT_STATE = {
   startMinimized: false,
   closeToTray: true,
   showNotifications: true,
+  autoCopyOnCapture: true,
   saveLocation: 'pictures' as SaveLocation,
   customSavePath: null,
   theme: 'dark' as ThemeMode,
@@ -124,6 +127,7 @@ export const useSettingsStore = create<SettingsState>()(
       setStartMinimized: (value) => set({ startMinimized: value }),
       setCloseToTray: (value) => set({ closeToTray: value }),
       setShowNotifications: (value) => set({ showNotifications: value }),
+      setAutoCopyOnCapture: (value) => set({ autoCopyOnCapture: value }),
       setSaveLocation: (location) => set({ saveLocation: location }),
       setCustomSavePath: (path) => set({ customSavePath: path }),
       setTheme: (theme) => set({ theme }),

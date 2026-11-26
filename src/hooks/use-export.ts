@@ -12,6 +12,7 @@ import {
   stageToDataURL,
   dataURLToBytes,
   generateFilename,
+  hashBytes,
   calculateAspectRatioExtend,
   ExportError,
 } from '../utils/export-utils';
@@ -22,6 +23,7 @@ import {
   showSaveDialog,
   normalizePath,
   extractFilename,
+  copyPathToClipboard,
 } from '../utils/file-api';
 import { logError } from '../utils/logger';
 import { useCropStore } from '../stores/crop-store';
@@ -35,6 +37,7 @@ export function useExport() {
     isExporting,
     exportOperation,
     setLastSavePath,
+    setLastSaveHash,
     startExport,
     finishExport,
   } = useExportStore();
@@ -125,15 +128,21 @@ export function useExport() {
   /**
    * Copy image to clipboard with loading state
    * Uses custom Rust command with arboard for reliable clipboard access on macOS
+   * @param opts.silent - suppress success toast/notification (used by auto-copy to avoid spam)
    */
-  const copyToClipboard = useCallback(async () => {
+  const copyToClipboard = useCallback(async (opts?: { silent?: boolean }) => {
     if (isExporting) return false;
+
+    const silent = opts?.silent ?? false;
 
     startExport('clipboard');
     const dataURL = exportToDataURL();
     if (!dataURL) {
       finishExport();
-      await notify('Copy Failed', 'No image to copy. Take a screenshot first.');
+      // Auto-copy on an empty canvas is a no-op, not an error worth surfacing
+      if (!silent) {
+        await notify('Copy Failed', 'No image to copy. Take a screenshot first.');
+      }
       return false;
     }
 
@@ -144,16 +153,19 @@ export function useExport() {
       // Use custom Rust command with arboard crate for reliable clipboard
       await invoke('copy_image_to_clipboard', { base64Data });
 
-      // Show in-app toast notification
-      toast.success('Copied!', 'Image copied to clipboard');
-
-      // Also send system notification if enabled
-      await notify('Copied!', 'Image copied to clipboard');
+      if (!silent) {
+        // Show in-app toast notification
+        toast.success('Copied!', 'Image copied to clipboard');
+        // Also send system notification if enabled
+        await notify('Copied!', 'Image copied to clipboard');
+      }
 
       return true;
     } catch (e) {
       logError('copyToClipboard', e);
-      await notify('Copy Failed', 'Could not copy to clipboard.');
+      if (!silent) {
+        await notify('Copy Failed', 'Could not copy to clipboard.');
+      }
       return false;
     } finally {
       finishExport();
@@ -195,6 +207,22 @@ export function useExport() {
 
     try {
       const bytes = dataURLToBytes(dataURL);
+      const hash = hashBytes(bytes);
+
+      // Dedup: if content is unchanged since the last save and that file still
+      // exists on record, skip the write to avoid piling up duplicate files.
+      const { lastSaveHash, lastSavePath } = useExportStore.getState();
+      if (hash === lastSaveHash && lastSavePath) {
+        const pathCopied = await copyPathToClipboard(lastSavePath);
+        toast.info(
+          'Already saved',
+          pathCopied
+            ? 'No changes since your last save · path copied'
+            : 'No changes since your last save'
+        );
+        return lastSavePath;
+      }
+
       const saveDir = await getSaveDir();
       const filename = generateFilename(format);
       const fullPath = `${saveDir}/${filename}`;
@@ -203,8 +231,15 @@ export function useExport() {
       // Normalize path for display (removes Windows \\?\ prefix)
       const displayPath = normalizePath(savedPath);
       setLastSavePath(displayPath);
+      setLastSaveHash(hash);
 
-      await notifyFileSaved('Saved!', `Image saved to ${filename}`, displayPath);
+      // Leave the saved file's path on the clipboard for pasting elsewhere
+      const pathCopied = await copyPathToClipboard(displayPath);
+      await notifyFileSaved(
+        'Saved!',
+        pathCopied ? `Image saved to ${filename} · path copied` : `Image saved to ${filename}`,
+        displayPath
+      );
 
       return savedPath;
     } catch (e) {
@@ -214,7 +249,7 @@ export function useExport() {
     } finally {
       finishExport();
     }
-  }, [isExporting, exportToDataURL, format, setLastSavePath, startExport, finishExport, notify, notifyFileSaved, getSaveDir]);
+  }, [isExporting, exportToDataURL, format, setLastSavePath, setLastSaveHash, startExport, finishExport, notify, notifyFileSaved, getSaveDir]);
 
   /**
    * Save with dialog for location selection with loading state
@@ -244,6 +279,8 @@ export function useExport() {
       // Normalize path for display (removes Windows \\?\ prefix)
       const displayPath = normalizePath(savedPath);
       setLastSavePath(displayPath);
+      // Record hash so a following Quick Save of the same content dedups
+      setLastSaveHash(hashBytes(bytes));
 
       // Extract filename for display message (handles cross-platform separators)
       const filename = extractFilename(savedPath);
@@ -257,7 +294,7 @@ export function useExport() {
     } finally {
       finishExport();
     }
-  }, [isExporting, exportToDataURL, format, setLastSavePath, startExport, finishExport, notify, notifyFileSaved]);
+  }, [isExporting, exportToDataURL, format, setLastSavePath, setLastSaveHash, startExport, finishExport, notify, notifyFileSaved]);
 
   return {
     exportToDataURL,

@@ -66,16 +66,32 @@ export function calculateAspectRatioExtend(
 }
 
 /**
- * Generate timestamped filename for exports
+ * Generate timestamped filename for exports.
+ * Uses millisecond precision (YYYYMMDD_HHMMSS_mmm) so consecutive Quick Saves
+ * of distinct content never collide on the same filename (which would silently
+ * overwrite the earlier save).
  */
 export function generateFilename(format: ExportFormat): string {
-  const now = new Date();
-  const timestamp = now
-    .toISOString()
-    .replace(/[-:]/g, '')
-    .replace('T', '_')
-    .slice(0, 15);
-  return `beautyshot_${timestamp}.${format}`;
+  const iso = new Date().toISOString(); // e.g. 2024-12-25T10:30:45.123Z
+  const datePart = iso.slice(0, 10).replace(/-/g, ''); // 20241225
+  const timePart = iso.slice(11, 19).replace(/:/g, ''); // 103045
+  const msPart = iso.slice(20, 23); // 123
+  return `beautyshot_${datePart}_${timePart}_${msPart}.${format}`;
+}
+
+/**
+ * Fast, non-cryptographic content hash (FNV-1a 32-bit) of raw image bytes.
+ * Used to detect whether the exported image changed since the last save so
+ * repeated Quick Saves of identical content don't create duplicate files.
+ * Length is appended to further reduce accidental collisions.
+ */
+export function hashBytes(bytes: Uint8Array): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < bytes.length; i++) {
+    hash ^= bytes[i];
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return `${(hash >>> 0).toString(16)}-${bytes.length}`;
 }
 
 /**

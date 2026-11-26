@@ -320,6 +320,18 @@ export function SettingsModal({ isOpen, onClose }: Props) {
                 />
                 <span className="text-sm text-gray-600 dark:text-gray-300">Show notifications</span>
               </label>
+
+              <label className="flex items-center gap-3 cursor-pointer glass-flat rounded-xl p-3 transition-all hover:bg-white/20 dark:hover:bg-white/5">
+                <input
+                  type="checkbox"
+                  checked={settings.autoCopyOnCapture}
+                  onChange={(e) => settings.setAutoCopyOnCapture(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-orange-500 focus:ring-orange-500"
+                />
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  Auto-copy to clipboard after capture
+                </span>
+              </label>
             </div>
           </section>
 

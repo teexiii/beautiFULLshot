@@ -25,6 +25,9 @@ interface CanvasState {
   imageBytes: Uint8Array | null;
   originalWidth: number;
   originalHeight: number;
+  // Monotonic counter bumped whenever a NEW image is loaded (capture/drag/paste).
+  // Single signal used to trigger auto-copy. Crop/undo/restore do NOT bump it.
+  imageLoadNonce: number;
 
   // Canvas viewport
   stageWidth: number;
@@ -77,6 +80,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   imageBytes: null,
   originalWidth: 0,
   originalHeight: 0,
+  imageLoadNonce: 0,
   stageWidth: 800,
   stageHeight: 600,
   scale: 1,
@@ -97,6 +101,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       imageBytes: bytes,
       originalWidth: width,
       originalHeight: height,
+      // Bump nonce so auto-copy fires for this fresh image
+      imageLoadNonce: get().imageLoadNonce + 1,
     });
 
     // Revoke old URL after state update to prevent race condition

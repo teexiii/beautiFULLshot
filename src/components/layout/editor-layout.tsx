@@ -10,6 +10,7 @@ import { MonitorPickerModal } from '../capture/monitor-picker-modal';
 import { useUIStore } from '../../stores/ui-store';
 import { useCanvasStore } from '../../stores/canvas-store';
 import { useCropStore } from '../../stores/crop-store';
+import { useAutoCopy } from '../../hooks/use-auto-copy';
 import { logError } from '../../utils/logger';
 
 // Helper: Load image and get dimensions
@@ -35,6 +36,9 @@ export function EditorLayout() {
   const { setImageFromBytes, fitToView } = useCanvasStore();
   const { clearCrop } = useCropStore();
   const [isDragging, setIsDragging] = useState(false);
+
+  // Auto-copy beautified result to clipboard whenever a new image is loaded
+  useAutoCopy();
 
   // Handle window capture with auto-fit
   const handleWindowCapture = useCallback(

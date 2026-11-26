@@ -154,7 +154,7 @@ export function ExportPanel() {
           )}
         </button>
         <button
-          onClick={copyToClipboard}
+          onClick={() => copyToClipboard()}
           disabled={isExporting}
           className={`w-full py-2.5 glass-btn text-gray-600 dark:text-gray-300 rounded-xl text-sm font-medium transition-all ${
             isExporting ? 'opacity-70 cursor-not-allowed' : ''

@@ -2,6 +2,8 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import { save } from '@tauri-apps/plugin-dialog';
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { logError } from './logger';
 import type { ExportFormat } from '../stores/export-store';
 
 /**
@@ -25,6 +27,21 @@ export function extractFilename(path: string): string {
   // Handle both Windows (\) and Unix (/) separators
   const parts = normalized.split(/[\\/]/);
   return parts[parts.length - 1] || 'image';
+}
+
+/**
+ * Copy a file path to the clipboard as text.
+ * Never throws: a clipboard failure must not turn a successful save into an error.
+ * @returns true when the path was written, false otherwise
+ */
+export async function copyPathToClipboard(path: string): Promise<boolean> {
+  try {
+    await writeText(normalizePath(path));
+    return true;
+  } catch (e) {
+    logError('copyPathToClipboard', e);
+    return false;
+  }
 }
 
 /**
