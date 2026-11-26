@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 frontend_stack: react
 risk_tier: small
 source: user request 2026-11-26 (no brainstorm report; request used as spec)
