@@ -1,26 +1,18 @@
-// ToolSettings - Color, stroke, and font settings for annotation tools
+// ToolSettings - Stroke color, fill color, stroke width, and font settings for annotation tools
 
 import { useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useAnnotationStore } from '../../stores/annotation-store';
-import { ColorPicker } from '../ui/color-picker';
 import { FontSettings } from './font-settings';
-
-const PRESET_COLORS = [
-  '#ff0000', // Red
-  '#ff6600', // Orange
-  '#ffcc00', // Yellow
-  '#00cc00', // Green
-  '#0066ff', // Blue
-  '#000000', // Black
-  '#ffffff', // White
-];
+import { ColorPickerModal, PRESET_COLORS, NO_COLOR, NO_COLOR_SWATCH_STYLE } from './color-picker-modal';
 
 export function ToolSettings() {
   const {
     strokeColor,
+    fillColor,
     strokeWidth,
     setStrokeColor,
+    setFillColor,
     setStrokeWidth,
     currentTool,
     selectedId,
@@ -33,11 +25,24 @@ export function ToolSettings() {
   const isTextSelected = selectedAnnotation?.type === 'text';
   const showFontSettings = isTextToolActive || isTextSelected;
 
+  // Fill applies to rectangle/ellipse: while drawing them or when one is selected
+  const isFillableSelected =
+    selectedAnnotation?.type === 'rectangle' || selectedAnnotation?.type === 'ellipse';
+  const showFillSettings =
+    currentTool === 'rectangle' || currentTool === 'ellipse' || isFillableSelected;
+  // Show the selected shape's own fill, otherwise the fill used for the next shape
+  const activeFill = isFillableSelected ? selectedAnnotation.fill : fillColor;
+
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showFillPicker, setShowFillPicker] = useState(false);
   const [showFontPanel, setShowFontPanel] = useState(false);
 
   const closeColorPicker = useCallback(() => {
     setShowColorPicker(false);
+  }, []);
+
+  const closeFillPicker = useCallback(() => {
+    setShowFillPicker(false);
   }, []);
 
   const closeFontPanel = useCallback(() => {
@@ -85,61 +90,37 @@ export function ToolSettings() {
         </div>
       </div>
 
-      {/* Color Picker Modal - Using Portal */}
-      {showColorPicker && createPortal(
-        <>
-          <div
-            className="fixed inset-0 bg-black/30 z-[9998]"
-            onClick={closeColorPicker}
+      {showColorPicker && (
+        <ColorPickerModal
+          title="Pick Color"
+          color={strokeColor}
+          onChange={setStrokeColor}
+          onClose={closeColorPicker}
+        />
+      )}
+
+      {/* Fill color - only shapes that can be filled (rectangle, ellipse) */}
+      {showFillSettings && (
+        <div className="flex items-center gap-1.5">
+          <label className="text-xs text-gray-500 dark:text-gray-400">Fill:</label>
+          <button
+            onClick={() => setShowFillPicker(true)}
+            className="w-5 h-5 rounded border border-gray-300 dark:border-gray-600 transition-all hover:scale-105 cursor-pointer"
+            style={activeFill === NO_COLOR ? NO_COLOR_SWATCH_STYLE : { backgroundColor: activeFill }}
+            title={activeFill === NO_COLOR ? 'No fill' : `Fill ${activeFill}`}
+            aria-label="Pick fill color"
           />
-          <div
-            className="fixed z-[9999] glass-heavy rounded-2xl shadow-2xl w-[260px] p-4"
-            style={{
-              left: '50%',
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-            }}
-          >
-            <div className="flex justify-between items-center mb-3">
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Pick Color</p>
-              <button
-                onClick={closeColorPicker}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <ColorPicker color={strokeColor} onChange={setStrokeColor} />
-            <div className="mt-3 pt-3 border-t border-white/10">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Presets</p>
-              <div className="flex flex-wrap gap-1.5">
-                {PRESET_COLORS.map((color) => (
-                  <button
-                    key={`picker-${color}`}
-                    onClick={() => setStrokeColor(color)}
-                    className={`w-6 h-6 rounded border-2 transition-all hover:scale-110 cursor-pointer ${
-                      strokeColor === color ? 'border-orange-500' : 'border-gray-300 dark:border-gray-600'
-                    }`}
-                    style={{ backgroundColor: color }}
-                    title={color}
-                  />
-                ))}
-              </div>
-            </div>
-            {/* OK Button */}
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={closeColorPicker}
-                className="px-4 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer"
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </>,
-        document.body
+        </div>
+      )}
+
+      {showFillPicker && showFillSettings && (
+        <ColorPickerModal
+          title="Fill Color"
+          color={activeFill}
+          onChange={setFillColor}
+          onClose={closeFillPicker}
+          allowNone
+        />
       )}
 
       {/* Stroke width - horizontal slider (hide for text tool) */}
@@ -148,7 +129,7 @@ export function ToolSettings() {
           <label className="text-xs text-gray-500 dark:text-gray-400">Width:</label>
           <input
             type="range"
-            min="1"
+            min={showFillSettings ? 0 : 1}
             max="100"
             value={strokeWidth}
             onChange={(e) => setStrokeWidth(Number(e.target.value))}
